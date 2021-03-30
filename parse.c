@@ -103,23 +103,14 @@ int qvalue(char *str, Branch** branch)
 		if(str[i]=='.'){
 			i++;
 			BranchList* sub_branches = new_branchlist();
-			BranchList* sb;
-			a=DIGIT(str+i, &(sub_branches->branch));
+
+			a=DIGIT(str+i, addBranch(sub_branches));
 			while(a){
-				sb = sub_branches;
-				while(sb->next) sb = sb->next;
-				sb->next = new_branchlist();
 				i++;
-				a=DIGIT(str+i, &(sb->next->branch));
+				a=DIGIT(str+i, addBranch(sub_branches));
 			}
-			sb = sub_branches;
-			if(sb->next){
-				while(sb->next->next) sb = sb->next;
-				freeall(sb->next);
-				sb->next = NULL;
-				(*branch)->branches = sub_branches;
-			}
-			else freeall(sb);
+			freeLast(&sub_branches);
+			(*branch)->branches = sub_branches;
 		}
 		res = i;
 	}
@@ -141,17 +132,24 @@ int weight(char *str,Branch** branch)
 	BranchList* sub_branches = new_branchlist();
 
 	int res = 0;
-	int i=OWS(str, &(sub_branches->branch));
+	int i=OWS(str, addBranch(sub_branches));
+	if(!i) freetree(sub_branches->branch);
 	int a;
 	if(str[i]==';')
 	{
 		i+=1;
-		i+=OWS(str+i);
+		int pa = OWS(str+i, addBranch(sub_branches));
+		if(!pa) freeLast(&sub_branches);
+
+		i+=pa;
 		if(str[i]=='q'){
 			i+=1;
 			if(str[i]=='='){
 				i+=1;
-				a=qvalue(str+i);;
+
+				a=qvalue(str+i, addBranch(sub_branches));
+				if(!a) freeLast(&sub_branches);
+
 				if(a){
 					i+=a;
 					res = i;
@@ -658,11 +656,12 @@ int userinfo(char* str,Branch** branch)
 	return i;
 }
 
-int dec_octet()
 
-int IPv4adress(char *str, Branch** branch)
+int dec_octet(char *str, Branch** branch)
 {
 	int i=0;
+	int a,b;
+
 	if(str[0]=='2')
 	{
 		if(str[1]=='5')
@@ -671,9 +670,72 @@ int IPv4adress(char *str, Branch** branch)
 			{
 				i=3;
 			}
-
+		}
+		else if(str[1]>=0x30 && str[1]<=0x34)
+		{
+			a=DIGIT(str+2);
+			if(a)
+			{
+				i=3;
+			}
 		}
 	}
+	else if(str[0]=='1')
+	{
+		a=DIGIT(str+1);
+		if(a)
+		{
+			b=DIGIT(str+2);
+			if(b)
+			{
+				i=3;
+			}
+		}
+	}
+
+
+	if(i==0 && str[0]>=0x31 && str[0]<=0x39)
+	{
+		a=DIGIT(str+1);
+		if(a)
+		{
+			i=2;
+		}
+	}
+	a=DIGIT(str);
+	if(i==0 && a)
+	{
+		i=1;
+	}
+	return i;
+}
+
+int IPv4address(char *str,Branch** branch)
+{
+	int i=dec_octet(str);
+	int a;
+	if(i && str[i]=='.')
+	{
+		i++;
+		a=dec_octet(str+i);
+		if(a && str[i+a]=='.'){
+			i+=a+1;
+			a=dec_octet(str+i);
+			if(a && str[i+a]=='.'){
+				i+=a+1;
+				a=dec_octet(str+i);
+				if(a)
+				{
+					i+=a;
+				}
+				else i=0;
+			}
+			else i=0;
+		}
+		else i=0;
+	}
+	else i=0;
+	return i;
 }
 
 int h16(char *str, Branch** branch)
@@ -688,7 +750,7 @@ int h16(char *str, Branch** branch)
 int ls32(char *str, Branch** branch)
 {
 	int i=h16(str);
-	int a;
+	int a=IPv4address(str);
 	if(i && str[i]==':')
 	{
 		i++;
@@ -700,8 +762,58 @@ int ls32(char *str, Branch** branch)
 			i=0;
 		}
 	}
-	else if()
+	else if(a);
+	{
+		i=a;
+	}
 	return i;
+}
+
+int sousIPV6(char* str, Branch** branch, int *compt)
+{
+	int a=h16(str);
+	*compt=0;
+	while(a && str[i]==':')
+	{
+		i+=a+1;
+		(*compt)++;
+		a=h16(str+i);
+	}
+	return i;
+}
+
+int IPv6address(char* str, Branch** branch) //6 ( h16 ":" ) ls32 / "::" 5 ( h16 ":" ) ls32 / [ h16 ] "::" 4 ( h16 ":" ) ls32 / [ h16 *1 ( ":" h16 ) ] "::" 3 ( h16 ":" ) ls32 / [ h16 *2 ( ":" h16 ) ] "::" 2 ( h16 ":" ) ls32 / [ h16 *3 ( ":" h16 ) ] "::" h16 ":" ls32 / [ h16 *4 ( ":" h16 ) ] "::" ls32 / [ h16 *5 ( ":" h16 ) ] "::" h16 / [ h16 *6 ( ":" h16 ) ] "::"
+{
+	int i=0;
+	int a,b,c,d,e,f;
+	int compt=0;
+	a=h16(str);
+
+	i=sousIPV6(str, Branch** branch,&compt);
+	if(compt==6 && str[i]==':')
+	{
+			a=ls32(str+i+1);
+			if(a)
+			{
+				i+=a+1; //premier OU
+			}
+	}
+	else if(compt==0)
+	{
+		if(str[0]==':'){
+			if(str[1]==':'){
+				i=sousIPV6(str, Branch** branch,&compt);
+				if(compt==5)
+				{
+					a=ls32(str+i);
+					if(a){
+						i+=a; //deuxieme OU
+					}
+				}
+			}
+
+		}
+	}
 }
 
 int host(char* str, Branch** branch)

@@ -1,4 +1,4 @@
-#include "struct_arbre.h"
+#include "api_sub_functions.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -91,23 +91,14 @@ int qvalue(char *str, Branch** branch)
 		if(str[i]=='.'){
 			i++;
 			BranchList* sub_branches = new_branchlist();
-			BranchList* sb;
-			a=DIGIT(str+i, &(sub_branches->branch));
+
+			a=DIGIT(str+i, addBranch(sub_branches));
 			while(a){
-				sb = sub_branches;
-				while(sb->next) sb = sb->next;
-				sb->next = new_branchlist();
 				i++;
-				a=DIGIT(str+i, &(sb->next->branch));
+				a=DIGIT(str+i, addBranch(sub_branches));
 			}
-			sb = sub_branches;
-			if(sb->next){
-				while(sb->next->next) sb = sb->next;
-				freeall(sb->next);
-				sb->next = NULL;
-				(*branch)->branches = sub_branches;
-			}
-			else freeall(sb);
+			freeLast(&sub_branches);
+			(*branch)->branches = sub_branches;
 		}
 		res = i;
 	}
@@ -123,10 +114,20 @@ int qvalue(char *str, Branch** branch)
 	return res;
 }
 
+
+
 int main(void){
 	char* test="0.15648";
-	Branch* branch	;
-	qvalue(test, &branch);
+	Branch* root	;
+	qvalue(test, &root);
 	printf("analyse terminée\n");
-	displaytree(branch, 0);
+	displaytree(root, 0);
+	_Token * tok;
+	tok = searchTree(root, "DIGIT");
+
+	displayElement(tok);
+
+	printf("%s\n", ( (Branch*) (tok->node))->tag);
+	printf("%s\n", ( (Branch*) (tok->next))->tag);
+	printf("%x\n", tok->next);
 }

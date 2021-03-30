@@ -1,5 +1,6 @@
 
 #include "api_sub_functions.h"
+#include <stdio.h>
 
 void *getRootTree(){
   extern void * root;
@@ -34,13 +35,16 @@ _Token *searchTree(void *start,char *name){
   if(start == NULL) branch = (Branch *) getRootTree();
   else branch = (Branch *) start;
 
-  if(strncmp(branch->tag, name, strlen(name))){
+  //printf("name %s\n", name);//debug
+  //printf("branch->tag %s\n", branch->tag);//debug
+
+  if(strncmp(branch->tag, name, strlen(name))==0){
     result = malloc(sizeof(_Token));
     result->node = branch;
     result->next = searchSubTrees(branch->branches, name);
   }
   else result = searchSubTrees(branch->branches, name);
-
+  //printf("api %x\n", result);
   return result;
 }
 
@@ -95,3 +99,14 @@ void purgeSubTrees(BranchList* branches){
 
 //Mdr on verra + tard
 int parseur(char *req, int len);
+
+void displayElement(_Token *r){
+    while(r){
+        printf("%s: %*.*s\n",
+        ((Branch*)(r->node))->tag,
+        ((Branch*)(r->node))->data_size,
+        ((Branch*)(r->node))->data_size,
+        ((Branch*)(r->node))->data);
+        r = r->next;
+    }
+}

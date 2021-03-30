@@ -49,3 +49,27 @@ void displaytree(Branch* t, int n){
         bl = bl->next;
     }
 }
+
+
+Branch** addBranch(BranchList* sub_branches){
+    if(sub_branches->branch){
+    	BranchList* sb = sub_branches;
+    	while(sb->next) sb = sb->next;
+    	sb->next = new_branchlist();
+    	return &(sb->next->branch);
+    }
+    else return &(sub_branches->branch);
+}
+
+void freeLast(BranchList** sub_branches){
+    BranchList* sb = *sub_branches;
+    if(sb->next){
+        while(sb->next->next) sb = sb->next;
+        freeall(sb->next);
+        sb->next = NULL;
+    }
+    else{
+        freeall(sb);
+        *sub_branches = NULL;
+    }
+}
