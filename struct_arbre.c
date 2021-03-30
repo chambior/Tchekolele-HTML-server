@@ -4,23 +4,18 @@
 #include "struct_arbre.h"
 
 Branch* new_branch(char* data, int data_size, char* tag){
-  Branch* branch = (Branch*) malloc(sizeof(Branch));
-
-  branch->tag = (char*) malloc(strlen(tag));
-  strcpy(tag, branch->tag);
-
-  branch->branches = NULL;
-  branch->data = data;
-  branch->data_size = data_size;
-  return branch;
+    Branch* branch = (Branch*) malloc(sizeof(Branch));
+    branch->tag = (char*) malloc(strlen(tag));
+    strcpy(branch->tag, tag);
+    branch->branches = NULL;
+    branch->data = data;
+    branch->data_size = data_size;
+    return branch;
 }
 
 BranchList* new_branchlist(){
-  printf("branch1\n");
   BranchList* branchlist = (BranchList*) malloc(sizeof(BranchList));
-  printf("branch2\n");
   branchlist->branch = NULL;
-  printf("branch3\n");
   branchlist->next = NULL;
   return branchlist;
 }
@@ -40,7 +35,17 @@ void freeall(BranchList* list){
 void freetree(Branch* b){
   if(b){
     if(b->branches) freeall(b->branches);
-    if(b->tag) freeall(b->tag);
+    if(b->tag) free(b->tag);
     free(b);
   }
+}
+
+void displaytree(Branch* t, int n){
+    for(int i = 0; i < n; i++) printf("  ");
+    printf("%d-%s: %*.*s\n", n, t->tag, t->data_size, t->data_size, t->data);
+    BranchList* bl = t->branches;
+    while(bl){
+        displaytree(bl->branch, n+1);
+        bl = bl->next;
+    }
 }

@@ -20,3 +20,5 @@ BranchList* new_branchlist();
 void freeall(BranchList* list);
 
 void freetree(Branch* b);
+
+void displaytree(Branch* t, int n);

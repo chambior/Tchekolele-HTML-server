@@ -72,13 +72,12 @@ int ALPHA(char *car, Branch** branch)
 
 int DIGIT(char *car, Branch** branch)
 {
-	printf("DIGIT\n");
-  if(*car>='0' && *car<='9')
-  {
+	if(*car>='0' && *car<='9')
+	{
 		*branch = new_branch(car, 1, "DIGIT");
-  	return 1;
-  }
-  return 0;
+		return 1;
+	}
+	return 0;
 }
 
 int qvalue(char *str, Branch** branch)
@@ -86,19 +85,14 @@ int qvalue(char *str, Branch** branch)
 	int i=0;
 	int a;
 	int res = 0;
-	printf("qvalue\n");
 	*branch = new_branch(str,0,"qvalue");
-
 	if(str[i]=='0'){
 		i+=1;
 		if(str[i]=='.'){
 			i++;
 			BranchList* sub_branches = new_branchlist();
-			printf("1\n");
 			BranchList* sb;
-			printf("2\n");
 			a=DIGIT(str+i, &(sub_branches->branch));
-			printf("3\n");
 			while(a){
 				sb = sub_branches;
 				while(sb->next) sb = sb->next;
@@ -106,7 +100,6 @@ int qvalue(char *str, Branch** branch)
 				i++;
 				a=DIGIT(str+i, &(sb->next->branch));
 			}
-
 			sb = sub_branches;
 			if(sb->next){
 				while(sb->next->next) sb = sb->next;
@@ -114,22 +107,15 @@ int qvalue(char *str, Branch** branch)
 				sb->next = NULL;
 				(*branch)->branches = sub_branches;
 			}
-			else{
-				freeall(sb);
-			}
+			else freeall(sb);
 		}
 		res = i;
 	}
 	else if(str[i]=='1'){
 		i+=1;
-
 		if(str[i]=='.'){
 			i+=1;
-
-			while(str[i]=='0' && i<5){
-				i+=1;
-			}
-
+			while(str[i]=='0' && i<5) i+=1;
 		}
 		res = i;
 	}
@@ -141,5 +127,6 @@ int main(void){
 	char* test="0.15648";
 	Branch* branch	;
 	qvalue(test, &branch);
-	printf("Hello world, ça a compilé\n");
+	printf("analyse terminée\n");
+	displaytree(branch, 0);
 }

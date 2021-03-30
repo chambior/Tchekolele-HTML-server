@@ -77,7 +77,7 @@ int ALPHA(char *car, Branch** branch)
 	if((*car>='a' && *car<='z') || (*car>='A' && *car <='Z'))
 	{
 		*branch = new_branch(car, 1, "ALPHA");
-  	return 1;
+  		return 1;
 	}
   	return 0;
 }
@@ -86,7 +86,7 @@ int DIGIT(char *car, Branch** branch)
 {
   if(*car>='0' && *car<='9')
   {
-		*branch = new_branch(car, 1, "DIGIT");
+	*branch = new_branch(car, 1, "DIGIT");
   	return 1;
   }
   return 0;
@@ -98,45 +98,36 @@ int qvalue(char *str, Branch** branch)
 	int a;
 	int res = 0;
 	*branch = new_branch(str,0,"qvalue");
-
 	if(str[i]=='0'){
 		i+=1;
 		if(str[i]=='.'){
 			i++;
 			BranchList* sub_branches = new_branchlist();
+			BranchList* sb;
 			a=DIGIT(str+i, &(sub_branches->branch));
 			while(a){
-				BranchList* sb;
 				sb = sub_branches;
 				while(sb->next) sb = sb->next;
 				sb->next = new_branchlist();
 				i++;
 				a=DIGIT(str+i, &(sb->next->branch));
 			}
-
-
+			sb = sub_branches;
 			if(sb->next){
 				while(sb->next->next) sb = sb->next;
 				freeall(sb->next);
 				sb->next = NULL;
 				(*branch)->branches = sub_branches;
 			}
-			else{
-				freeall(sb);
-			}
+			else freeall(sb);
 		}
 		res = i;
 	}
 	else if(str[i]=='1'){
 		i+=1;
-
 		if(str[i]=='.'){
 			i+=1;
-
-			while(str[i]=='0' && i<5){
-				i+=1;
-			}
-
+			while(str[i]=='0' && i<5) i+=1;
 		}
 		res = i;
 	}
@@ -146,7 +137,11 @@ int qvalue(char *str, Branch** branch)
 
 int weight(char *str,Branch** branch)
 {
-	int i=OWS(str);
+	*branch = new_branch(str,0,"weight");
+	BranchList* sub_branches = new_branchlist();
+
+	int res = 0;
+	int i=OWS(str, &(sub_branches->branch));
 	int a;
 	if(str[i]==';')
 	{
@@ -159,12 +154,13 @@ int weight(char *str,Branch** branch)
 				a=qvalue(str+i);;
 				if(a){
 					i+=a;
-					return i;
+					res = i;
 				}
 			}
 		}
 	}
-	return 0;
+	*branch->data_size = i;
+	return res;
 }
 
 
@@ -659,6 +655,52 @@ int userinfo(char* str,Branch** branch)
 		b=pct_encoded(str);
 		c=sub_delims(str);
 	}
+	return i;
+}
+
+int dec_octet()
+
+int IPv4adress(char *str, Branch** branch)
+{
+	int i=0;
+	if(str[0]=='2')
+	{
+		if(str[1]=='5')
+		{
+			if(str[2]>=0x30 && str[2]<=0x35)
+			{
+				i=3;
+			}
+
+		}
+	}
+}
+
+int h16(char *str, Branch** branch)
+{
+	int i=0;
+	while(HEXDIG(str+i)&& i<4){
+		i++;
+	}
+	return i;
+}
+
+int ls32(char *str, Branch** branch)
+{
+	int i=h16(str);
+	int a;
+	if(i && str[i]==':')
+	{
+		i++;
+		a=h16(str+i);
+		if(a){
+			i+=a;
+		}
+		else{
+			i=0;
+		}
+	}
+	else if()
 	return i;
 }
 
