@@ -122,12 +122,16 @@ int main(void){
 	qvalue(test, &root);
 	printf("analyse terminée\n");
 	displaytree(root, 0);
-	_Token * tok;
+	_Token* tok;
+	char* text;
+	int* taille;
 	tok = searchTree(root, "DIGIT");
 
 	displayElement(tok);
 
-	printf("%s\n", ( (Branch*) (tok->node))->tag);
-	printf("%s\n", ( (Branch*) (tok->next))->tag);
-	printf("%x\n", tok->next);
+	text = getElementValue(tok->node, taille);
+
+	//printf("%s\n", ( (Branch*) (tok->node))->tag);
+	//printf("%s\n", ( (Branch*) (tok->next))->tag);
+	//printf("%x\n", tok->next);
 }
