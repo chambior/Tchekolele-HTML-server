@@ -61,7 +61,6 @@ char *getElementValue(void *node,int *len){
 }
 
 
-//Pourquoi y'a un ** ?
 void purgeElement(_Token **r){
   subPurgeElement(*r);
   *r = NULL;
@@ -88,7 +87,6 @@ void purgeSubTrees(BranchList* branches){
   }
 }
 
-//Mdr on verra + tard
 int parseur(char *req, int len);
 
 void displayElement(_Token *r){
@@ -101,12 +99,3 @@ void displayElement(_Token *r){
         r = r->next;
     }
 }
-
-//QUESTION POUR LE PROF:
-/*
-On nous a dit de ne pas recopier les données. Donc on ne passe qu'un pointeur
-vers le début de la chaine de caractères DANS la requête complète
-Donc on a aucun marqueur pour la FIN de la chaine, alors comment retourner len ?
-
-On a rajouté un champ "data_size" dans la structure d'un noeud en attendant
-*/

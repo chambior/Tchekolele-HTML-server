@@ -19,10 +19,10 @@ BranchList* new_branchlist();
 
 void freeall(BranchList* list);
 
-void freetree(Branch* b);
+void freetree(Branch** b);
 
 void displaytree(Branch* t, int n);
 
-Branch** addBranch(BranchList* sub_branches);
+Branch** addBranch(BranchList** sub_branches);
 
 void freeLast(BranchList** sub_branches);

@@ -90,12 +90,12 @@ int qvalue(char *str, Branch** branch)
 		i+=1;
 		if(str[i]=='.'){
 			i++;
-			BranchList* sub_branches = new_branchlist();
+			BranchList* sub_branches = NULL;
 
-			a=DIGIT(str+i, addBranch(sub_branches));
+			a=DIGIT(str+i, addBranch(&sub_branches));
 			while(a){
 				i++;
-				a=DIGIT(str+i, addBranch(sub_branches));
+				a=DIGIT(str+i, addBranch(&sub_branches));
 			}
 			freeLast(&sub_branches);
 			(*branch)->branches = sub_branches;
@@ -122,15 +122,31 @@ int main(void){
 	qvalue(test, &root);
 	printf("analyse terminée\n");
 	displaytree(root, 0);
-	_Token* tok;
-	char* text;
-	int* taille;
-	tok = searchTree(root, "DIGIT");
+
+	char *text;
+	char *text2;
+	int taille;
+	int taille2;
+	_Token* tok = searchTree(root, "DIGIT");
 
 	displayElement(tok);
 
-	text = getElementValue(tok->node, taille);
+	text = getElementTag(tok->node, &taille2);
 
+	text2 = getElementValue(tok->node, &taille);
+
+	printf("taille %*.*s\n", taille2, taille2, text);
+	printf("taille2 %*.*s\n", taille, taille, text2);
+
+	purgeTree(root);
+
+	printf("test\n");
+
+	tok = searchTree(root, "DIGIT");
+
+	printf("test2\n");
+
+	displayElement(tok);
 	//printf("%s\n", ( (Branch*) (tok->node))->tag);
 	//printf("%s\n", ( (Branch*) (tok->next))->tag);
 	//printf("%x\n", tok->next);

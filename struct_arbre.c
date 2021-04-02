@@ -32,11 +32,12 @@ void freeall(BranchList* list){
   }
 }
 
-void freetree(Branch* b){
-  if(b){
-    if(b->branches) freeall(b->branches);
-    if(b->tag) free(b->tag);
-    free(b);
+void freetree(Branch** b){
+  if(*b){
+    if((*b)->branches) freeall((*b)->branches);
+    if((*b)->tag) free((*b)->tag);
+    free((*b));
+    *b = NULL;
   }
 }
 
@@ -51,14 +52,18 @@ void displaytree(Branch* t, int n){
 }
 
 
-Branch** addBranch(BranchList* sub_branches){
-    if(sub_branches->branch){
-    	BranchList* sb = sub_branches;
+Branch** addBranch(BranchList** sub_branches){
+    if(!(*sub_branches)){
+        (*sub_branches) = new_branchlist();
+        return &((*sub_branches)->branch);
+    }
+    else if((*sub_branches)->branch){
+    	BranchList* sb = (*sub_branches);
     	while(sb->next) sb = sb->next;
     	sb->next = new_branchlist();
     	return &(sb->next->branch);
     }
-    else return &(sub_branches->branch);
+    else return &((*sub_branches)->branch);
 }
 
 void freeLast(BranchList** sub_branches){
