@@ -87,7 +87,7 @@ void purgeSubTrees(BranchList* branches){
 }
 
 int parseur(char *req, int len){
-    printf("parseur\n");
+    printf("parsing de la requête %s\n", req);
     Branch* branch = getRootTree();
 
 
