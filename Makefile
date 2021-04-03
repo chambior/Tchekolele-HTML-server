@@ -1,4 +1,4 @@
-main: test.o struct_arbre.o api.o
+main: struct_arbre.o api.o main.o 
 	gcc -Wall -o $@ $^
 %.o: %.c
 	gcc -Wall -c $<
