@@ -1,7 +1,7 @@
 main: struct_arbre.o api.o main.o parse.o
-	gcc -Wall -o $@ $^
+	gcc -g -Wall -o $@ $^
 %.o: %.c
-	gcc -Wall -c $<
+	gcc -g -Wall -c $<
 clear:
 	clear
 clean:

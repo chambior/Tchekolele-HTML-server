@@ -507,6 +507,7 @@ int method(char *str, Branch** branch)
 	if(!i) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("method returns %d\n", i);
 	return i;
 }
 
@@ -1837,7 +1838,6 @@ int origin_form(char* str, Branch** branch)
 	}
 	else
 	{
-		printf("coucou\n");
 		if(str[i]=='?')
 		{
 			int a = query(str+i, addBranch(&sub_branches));
@@ -1865,6 +1865,7 @@ int request_target(char *str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("request_target returns %d\n", i);
 	return i;
 
 }
@@ -1922,13 +1923,15 @@ int HTTP_version(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	printf("HTTP_version returns %d\n", res);
 	return res;
 }
 int request_line(char *str, Branch** branch)
 {
+	printf("Début request line sur %s", str);
 	*branch = new_branch(str, 0, "request_line");
 	BranchList* sub_branches = new_branchlist();
-		int res;
+	int res;
     int i=0;
     int a=method(str, addBranch(&sub_branches));
 	if(!a) freeLast(&sub_branches);
@@ -1969,6 +1972,7 @@ int request_line(char *str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	printf("request_line returns %d\n", res);
 	return res;
 }
 
@@ -2053,6 +2057,7 @@ int status_line(char *str, Branch** branch)
 	else res = 0;
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	printf("status_line returns %d\n", res);
 	return res;
 }
 
@@ -2075,6 +2080,7 @@ int start_line(char *str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	printf("start_line returns %d\n", res);
 	return res;
 }
 
@@ -2122,6 +2128,7 @@ int Accept(char* str, Branch** branch) //pas finis !!!!!
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("Accept returns %d\n", i);
 	return i;
 }
 
@@ -2150,6 +2157,7 @@ int Host_header(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("Host_header returns %d\n", i);
 	return i;
 }
 
@@ -2178,6 +2186,7 @@ int Cookie_header(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("Cookie_header returns %d\n", i);
 	return i;
 }
 
@@ -2206,6 +2215,7 @@ int Transfer_Encoding_header(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("Transfer_Encoding returns %d\n", i);
 	return i;
 }
 
@@ -2236,6 +2246,7 @@ int header_field(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = a+b+c+d+e+f+g+h+i;
+	printf("header_field returns %d\n", a+b+c+d+e+f+g+h+i);
 	return a+b+c+d+e+f+g+h+i;
 
 }
@@ -2252,6 +2263,7 @@ int message_body(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	printf("message_body returns %d\n", i);
 	return i;
 }
 
@@ -2287,5 +2299,8 @@ int HTTP_message(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+
+
+	printf("HTTP_message returns %d\n", i);
 	return i;
 }

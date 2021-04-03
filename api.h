@@ -1,4 +1,5 @@
-// defini un type pour la liste chainee renvoyée en réponse de la requete de recherche dans l'arbre. 
+#include "parse.h"
+// defini un type pour la liste chainee renvoyée en réponse de la requete de recherche dans l'arbre.
 
 typedef struct _token {
 		void *node;  		// node type opaque pointant vers un noeud de votre structure de données.
@@ -13,7 +14,7 @@ void *getRootTree();
 // sinon on effectue une recherche dans le sous-arbre à partir du noeud start
 _Token *searchTree(void *start,char *name);
 
-// fonction qui renvoie un pointeur vers char indiquant l'etiquette du noeud. (le nom de la rulename, intermediaire ou terminal)
+// fonction qui renvoie un pointeur verparser.hs char indiquant l'etiquette du noeud. (le nom de la rulename, intermediaire ou terminal)
 // et indique (si len!=NULL) dans *len la longueur de cette chaine.
 char *getElementTag(void *node,int *len);
 

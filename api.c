@@ -1,4 +1,3 @@
-
 #include "api_sub_functions.h"
 #include <stdio.h>
 
@@ -87,7 +86,23 @@ void purgeSubTrees(BranchList* branches){
   }
 }
 
-int parseur(char *req, int len);
+int parseur(char *req, int len){
+    printf("parseur\n");
+    Branch* branch = getRootTree();
+
+
+    branch = new_branch(req, 0, "parseur");
+	BranchList* sub_branches = new_branchlist();
+
+    int i = HTTP_message(req, addBranch(&sub_branches));
+	if(!i) freeLast(&sub_branches);
+
+    branch->branches = sub_branches;
+	branch->data_size = i;
+    displaytree(branch, 0);
+    printf("Fin displaytree sans erreur\n");
+	return i;
+}
 
 void displayElement(_Token *r){
     while(r){
