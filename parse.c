@@ -1,6 +1,5 @@
 #include "parse.h"
 
-
 int strcomp(char* str1,char* str2)
 {
 	int i=0;
@@ -66,17 +65,22 @@ int obs_text(char *str, Branch** branch)
 
 int ctext(char *car, Branch** branch)
 {
-	BranchList* sub_branches = new_branchlist();//
-	int a=obs_text(car, &(sub_branches->branch));//
+	int res;
+	*branch = new_branch(car, 0, "ctext");
+	BranchList* sub_branches = new_branchlist();
+
+	int a=obs_text(car, addBranch(&sub_branches));
+	if(!a) freeLast(&sub_branches);
+
 	if(*car==' ' || *car=='	' || (*car>=0x21 && *car<=0x27) || (*car >= 0x2A && *car<=0x5B)||(*car>=0x5D && *car<=0x7E)|| a){
-		*branch = new_branch(car, 1, "ctext");//
 
-		if(a) (*branch)->branches = sub_branches;//
-		else freeall(sub_branches); //freeall fonction qui libère tout un arbre sous une branchlist
-
-		return 1;
+		res = 1;
 	}
-	return 0;
+	else res = 0;
+
+	(*branch)->branches = sub_branches;
+	(*branch)->data_size = res;
+	return res;
 }
 
 int vchar(char *car, Branch** branch)
@@ -86,6 +90,7 @@ int vchar(char *car, Branch** branch)
 		*branch = new_branch(car, 1, "vchar");
 		return 1;
 	}
+	*branch = new_branch(car, 0, "vchar");
 	return 0;
 }
 
@@ -96,6 +101,7 @@ int ALPHA(char *car, Branch** branch)
 		*branch = new_branch(car, 1, "ALPHA");
   		return 1;
 	}
+	*branch = new_branch(car, 0, "ALPHA");
   	return 0;
 }
 
@@ -104,12 +110,19 @@ int DIGIT(char *car, Branch** branch)
   if(*car>='0' && *car<='9')
   {
 	*branch = new_branch(car, 1, "DIGIT");
+	#ifdef DEBUG
+	printf("DIGIT returns %d\n", 1);
+	#endif /* DEBUG */
   	return 1;
   }
+	*branch = new_branch(car, 0, "DIGIT");
+	#ifdef DEBUG
+	printf("DIGIT returns %d\n", 0);
+	#endif /* DEBUG */
   return 0;
 }
 
-int qvalue(char *str, Branch** branch)
+int qvalue(char *str, Branch** branch)//revoir
 {
 	int i=0;
 	int a;
@@ -122,11 +135,13 @@ int qvalue(char *str, Branch** branch)
 			BranchList* sub_branches = NULL;
 
 			a=DIGIT(str+i, addBranch(&sub_branches));
+			if(!a)freeLast(&sub_branches);
 			while(a){
 				i++;
 				a=DIGIT(str+i, addBranch(&sub_branches));
+				if(!a)freeLast(&sub_branches);
 			}
-			freeLast(&sub_branches);
+
 			(*branch)->branches = sub_branches;
 		}
 		res = i;
@@ -150,12 +165,13 @@ int weight(char *str,Branch** branch)
 
 	int res = 0;
 	int i=OWS(str, addBranch(&sub_branches));
-	if(!i) freeLast(&sub_branches);
+	//if(!i) freeLast(&sub_branches);
+
 	if(str[i]==';')
 	{
 		i+=1;
 		int pa = OWS(str+i, addBranch(&sub_branches));
-		if(!pa) freeLast(&sub_branches);
+		//if(!pa) freeLast(&sub_branches);
 
 		i+=pa;
 		if(str[i]=='q'){
@@ -252,35 +268,41 @@ int comment(char *str, Branch** branch)
 	BranchList* sub_branches = new_branchlist();
 	int res=0;
 	int i=0;
+
 	if(str[i]=='(')
 	{
 		i+=1;
 
 		int a1 = ctext(str+i, addBranch(&sub_branches));
 		if(!a1) freeLast(&sub_branches);
-
 		int a2 = quoted_pair(str+i, addBranch(&sub_branches));
 		if(!a2) freeLast(&sub_branches);
 
-		int a3 = comment(str+i, addBranch(&sub_branches));
-		if(!a3) freeLast(&sub_branches);
 
+		int a3 = comment(str+i, addBranch(&sub_branches));
+
+		if(!a3) freeLast(&sub_branches);
+		if(a1)
+		i+=a1;
+		else if(a2)
+		i+=a2;
+		else i+=a3;
 		while( a1 || a2 || a3 )
 		{
-			int a4 = ctext(str+i, addBranch(&sub_branches));
-			if(!a4) freeLast(&sub_branches);
+ 			a1= ctext(str+i, addBranch(&sub_branches));
+			if(!a1) freeLast(&sub_branches);
 
-			if(a4) i+=1;
+			if(a1) i+=1;
 			else{
-				int a5 = quoted_pair(str+i, addBranch(&sub_branches));
-				if(!a5) freeLast(&sub_branches);
+				a2 = quoted_pair(str+i, addBranch(&sub_branches));
+				if(!a2) freeLast(&sub_branches);
 
-				if(a5) i+=2;
+				if(a2) i+=2;
 				else{
-					int a6 = comment(str+i, addBranch(&sub_branches));
-					if(!a6) freeLast(&sub_branches);
+					a3 = comment(str+i, addBranch(&sub_branches));
+					if(!a3) freeLast(&sub_branches);
 
-					if(a6) i+=comment(str+i, addBranch(&sub_branches)); //wip
+					if(a3) i+=comment(str+i, addBranch(&sub_branches)); //wip
 				}
 			}
 		}
@@ -296,7 +318,7 @@ int comment(char *str, Branch** branch)
 
 int tchar(char *str, Branch** branch)
 {
-	*branch = new_branch(str, 0, "comment");
+	*branch = new_branch(str, 0, "tchar");
 	BranchList* sub_branches = new_branchlist();
 
 	int res = 0;
@@ -331,6 +353,7 @@ int token(char* str, Branch** branch) // 1* tchar
 	if(a1!=1)
 		res = 0;
 	else{
+		i++;
 		int a2 = tchar(str+i, addBranch(&sub_branches));
 		if(!a2) freeLast(&sub_branches);
 
@@ -343,7 +366,9 @@ int token(char* str, Branch** branch) // 1* tchar
 		}
 		res = i;
 	}
-
+	#ifdef DEBUG
+	printf("token returns %d\n", res);
+	#endif /* DEBUG */
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
 
@@ -416,13 +441,13 @@ int Accept_Encoding(char* str, Branch** branch) //  [ ( "," / ( codings [ weight
 			i+=var;
 		}
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 
 		while(a && str[i+a]==',')
 		{
 			i+=a+1;
 			b=OWS(str+i, addBranch(&sub_branches));
-			if(!b) freeLast(&sub_branches);
+			//if(!b) freeLast(&sub_branches);
 
 			c=codings(str+i+b, addBranch(&sub_branches));
 			if(!c) freeLast(&sub_branches);
@@ -447,6 +472,9 @@ int connection_option(char *str, Branch** branch)
 	if(!i) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("connection_option returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -471,14 +499,14 @@ int Connection(char *str, Branch** branch) //* ( "," OWS ) connection-option * (
 	{
 		i+=a;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 
 		while(str[i+a]==',')
 		{
 			i+=a;
 
 			a=OWS(str+i, addBranch(&sub_branches));
-			if(!a) freeLast(&sub_branches);
+			//if(!a) freeLast(&sub_branches);
 
 			b=connection_option(str+i+a, addBranch(&sub_branches));
 			if(!b) freeLast(&sub_branches);
@@ -495,6 +523,9 @@ int Connection(char *str, Branch** branch) //* ( "," OWS ) connection-option * (
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("Connection returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -507,7 +538,9 @@ int method(char *str, Branch** branch)
 	if(!i) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("method returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -531,6 +564,9 @@ int type(char* str, Branch** branch)
 	if(!i) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("type returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 int subtype(char* str, Branch** branch)
@@ -541,6 +577,9 @@ int subtype(char* str, Branch** branch)
 	if(!i) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("subtype returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -556,24 +595,15 @@ int product(char* str, Branch** branch) // token [ "/" product-version ]
 
 	if(str[i]=='/')
 	{
-		i+=1;
-		int a = product_version(str, addBranch(&sub_branches));
+		int a = product_version(str+i+1, addBranch(&sub_branches));
 		if(!a) freeLast(&sub_branches);
 
 		if(a){
-			a = product_version(str, addBranch(&sub_branches));
-			if(!a) freeLast(&sub_branches);
-
-			i+=a;
+			i+=a+1;
 			res = i;
 		}
-		else{
-			res = 0;
-		}
 	}
-	else{
-		res = i;
-	}
+	else res = i;
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
@@ -588,18 +618,19 @@ int User_Agent(char* str, Branch** branch)
 	BranchList* sub_branches = new_branchlist();
 	int res;
 	int i=product(str, addBranch(&sub_branches));
-	if(!i) freeLast(&sub_branches);
 
+	if(!i) freeLast(&sub_branches);
 	int a,b,c;
 	if(i==0)
 		res = 0;
 	else
 	{
+
 		a=RWS(str+i, addBranch(&sub_branches));
 		if(!a) freeLast(&sub_branches);
-		b=product(str+i+a+1, addBranch(&sub_branches));
+		b=product(str+i+a, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
-		c=comment(str+i+a+1, addBranch(&sub_branches));
+		c=comment(str+i+a, addBranch(&sub_branches));
 		if(!c) freeLast(&sub_branches);
 		while(a && (b || c))
 		{
@@ -613,7 +644,6 @@ int User_Agent(char* str, Branch** branch)
 		}
 		res = i;
 	}
-
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
 	return res;
@@ -621,20 +651,18 @@ int User_Agent(char* str, Branch** branch)
 
 int HEXDIG(char *car, Branch** branch)
 {
-	int a;
-	*branch = new_branch(car, 0, "HEXDIG");
-	BranchList* sub_branches = NULL;
+	int a = 0;
 
 	if((*car>='0' && *car<='9') || (*car>='A' && *car<='F'))
 	{
 		a = 1;
 	}
 
-	a = 0;
+	*branch = new_branch(car, a, "HEXDIG");
 
-	if(a) freeLast(&sub_branches);
-	(*branch)->branches = sub_branches;
-	(*branch)->data_size = a;
+	#ifdef DEBUG
+	printf("HEXDIG returns %d\n",a);
+	#endif /* DEBUG */
 	return a;
 }
 
@@ -668,7 +696,10 @@ int quoted_string(char* str, Branch** branch)
 	}
 	if(!c) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
-	(*branch)->data_size = i;
+	(*branch)->data_size = c;
+	#ifdef DEBUG
+	printf("quoted_string returns %d\n", c);
+	#endif /* DEBUG */
 	return c;
 }
 
@@ -678,13 +709,13 @@ int accept_ext(char *str,Branch** branch) //OWS ";" OWS token [ "=" ( token / qu
 	BranchList* sub_branches = NULL;
 
 	int i=OWS(str, addBranch(&sub_branches));
-	if(!i) freeLast(&sub_branches);
+	//if(!i) freeLast(&sub_branches);
 
 	int a,b;
 	if(str[i]==';')
 	{
 		int var = OWS(str, addBranch(&sub_branches));
-		if(!var) freeLast(&sub_branches);
+		//if(!var) freeLast(&sub_branches);
 		i+=var;
 
 		a=token(str+i, addBranch(&sub_branches));
@@ -743,7 +774,9 @@ int accept_params(char* str, Branch** branch) //weight * accept-ext
 		}
 
 	}
-
+	#ifdef DEBUG
+	printf("accept_params returns %d\n", i);
+	#endif /* DEBUG */
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
 	return i;
@@ -760,7 +793,7 @@ int parameter(char *str, Branch** branch)
 	if(!a) freeLast(&sub_branches);
 	int b;
 	int c;
-	int d;
+	int d = 0;
 	if(a)
 	{
 		i+=a;
@@ -785,6 +818,9 @@ int parameter(char *str, Branch** branch)
 	if(!d) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = d;
+	#ifdef DEBUG
+	printf("parameter return %d\n",d);
+	#endif /* DEBUG */
 	return d;
 }
 
@@ -794,18 +830,22 @@ int media_range(char* str, Branch** branch)
 	*branch = new_branch(str, 0, "media_range");
 	BranchList* sub_branches = NULL;
 
-	int res;
+	int res = 0;
 	int i=0;
+
 	int a = type(str, addBranch(&sub_branches));
-	int b= subtype(str+2, addBranch(&sub_branches));
+	if(!a) freeLast(&sub_branches);
+	int b = subtype(str+2, addBranch(&sub_branches));
+	if(!b) freeLast(&sub_branches);
+
 	int c;
 	if((str[0]=='*' && str[1]=='/' && str[2]=='*') || (a && str[1]=='/' && b) || (a && str[1]== '/' && str[2]=='*'))
 	{
 		i+=3;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=OWS(str+i+a+1, addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+		//if(!b) freeLast(&sub_branches);
 		c=parameter(str+i+a+b+i, addBranch(&sub_branches));
 		if(!c) freeLast(&sub_branches);
 		while(a & b &c){
@@ -814,10 +854,12 @@ int media_range(char* str, Branch** branch)
 		res = i;
 
 	}
-	res = 0;
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	#ifdef DEBUG
+	printf("media_range returns %d\n", res);
+	#endif /* DEBUG */
 	return res;
 }
 
@@ -834,6 +876,9 @@ int sub_delims(char *car, Branch** branch)
 	if(!a) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = a;
+	#ifdef DEBUG
+	printf("sub_delims returns %d\n", a);
+	#endif /* DEBUG */
 	return a;
 }
 
@@ -849,6 +894,9 @@ int pct_encoded(char *str, Branch** branch)
 	if(!a) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = a;
+	#ifdef DEBUG
+	printf("pct_encoded returns %d\n", a);
+	#endif /* DEBUG */
 	return a;
 }
 
@@ -872,6 +920,9 @@ int unreserved(char *car, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	#ifdef DEBUG
+	printf("unreserved returns %d\n", res);
+	#endif /* DEBUG */
 	return res;
 }
 
@@ -884,6 +935,9 @@ int BWS(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("OWS returns %d", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -937,12 +991,12 @@ int transfer_parameter(char *str, Branch** branch)
 
 	if(i){
 		a=BWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 
 		i+=a;
 		if(str[i]=='='){
 			a=BWS(str+i+1, addBranch(&sub_branches));
-			if(!a) freeLast(&sub_branches);
+			//if(!a) freeLast(&sub_branches);
 
 			i+=a+1;
 			a=token(str+i, addBranch(&sub_branches));
@@ -979,9 +1033,9 @@ int transfer_extension(char *str, Branch** branch)
 	if(i)
 	{
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=OWS(str+a+i+1,addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+		//if(!b) freeLast(&sub_branches);
 		c=transfer_parameter(str+i,addBranch(&sub_branches));
 		if(!c) freeLast(&sub_branches);
 		while(a && b && c && str[a+1]==';')
@@ -990,7 +1044,7 @@ int transfer_extension(char *str, Branch** branch)
 			a=transfer_parameter(str+i,addBranch(&sub_branches));
 			if(!a) freeLast(&sub_branches);
 			b=OWS(str+a+i+1,addBranch(&sub_branches));
-			if(!b) freeLast(&sub_branches);
+			//if(!b) freeLast(&sub_branches);
 			c=transfer_parameter(str+i,addBranch(&sub_branches));
 			if(!c) freeLast(&sub_branches);
 		}
@@ -1020,19 +1074,19 @@ int transfer_coding(char* str, Branch** branch)
 
 int Transfer_Encoding(char* str, Branch** branch)
 {
-	*branch = new_branch(str, 0, "Transfer_Encoding");
+	*branch = new_branch(str, 0, "");
 	BranchList* sub_branches = new_branchlist();
 
 	int i=0;
 	int a=OWS(str+1, addBranch(&sub_branches));
-	if(!a) freeLast(&sub_branches);
+	//if(!a) freeLast(&sub_branches);
 
 	int b,c;
 	while(a && str[i]==',')
 	{
 		i+=1+a;
 		a=OWS(str+i+1, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 	}
 	a=transfer_coding(str+i, addBranch(&sub_branches));
 	if(!a) freeLast(&sub_branches);
@@ -1040,18 +1094,18 @@ int Transfer_Encoding(char* str, Branch** branch)
 	{
 		i+=a;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=OWS(str+i+a+1, addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+		//if(!b) freeLast(&sub_branches);
 		c=transfer_coding(str+i+a+1+b, addBranch(&sub_branches));
 		if(!c) freeLast(&sub_branches);
-		while(a&&b&&c&&str[i+a]==',')
+		while(b&&str[i+a]==',')
 		{
 			i+=a+b+c+1;
 			a=OWS(str+i, addBranch(&sub_branches));
-			if(!a) freeLast(&sub_branches);
+			//if(!a) freeLast(&sub_branches);
 			b=OWS(str+i+a+1, addBranch(&sub_branches));
-			if(!b) freeLast(&sub_branches);
+			//if(!b) freeLast(&sub_branches);
 			c=transfer_coding(str+i+a+1+b, addBranch(&sub_branches));
 			if(!c) freeLast(&sub_branches);
 		}
@@ -1296,6 +1350,7 @@ int dec_octet(char *str, Branch** branch){
 				i=3;
 			}
 		}
+
 	}
 
 
@@ -1316,6 +1371,9 @@ int dec_octet(char *str, Branch** branch){
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("dec_octet returns %d\n",i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1353,6 +1411,9 @@ int IPv4address(char *str,Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("IPv4address returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1376,6 +1437,9 @@ int host(char *str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("host returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1460,14 +1524,14 @@ int Content_Lenght_Header(char* str, Branch** branch) //"Content-Length" ":" OWS
 	if(strcomp(str,"Content-Lenght:"))
 	{
 		a=OWS(str+15, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=Content_Lenght(str+i+a+15, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
 		if(b)
 		{
 			i+=a+15+b;
 			a=OWS(str+i, addBranch(&sub_branches));
-			if(!a) freeLast(&sub_branches);
+			//if(!a) freeLast(&sub_branches);
 			i+=a;
 		}
 	}
@@ -1506,6 +1570,9 @@ int authority(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("port returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1537,17 +1604,29 @@ int reg_name(char* str, Branch** branch)
 {
 	*branch = new_branch(str, 0, "hier_part");
 	BranchList* sub_branches = new_branchlist();
-
-	int i=unreserved(str, addBranch(&sub_branches));
-	if(!i) freeLast(&sub_branches);
-	int a=pct_encoded(str, addBranch(&sub_branches));
+	int i=0;
+	int a=unreserved(str, addBranch(&sub_branches));
 	if(!a) freeLast(&sub_branches);
-	int b=sub_delims(str, addBranch(&sub_branches));
+	int b=pct_encoded(str, addBranch(&sub_branches));
 	if(!b) freeLast(&sub_branches);
-
+	int c=sub_delims(str, addBranch(&sub_branches));
+	if(!c) freeLast(&sub_branches);
+	while(a || b || c)
+	{
+		i+=a+b+c;
+		a=unreserved(str+i, addBranch(&sub_branches));
+		if(!a) freeLast(&sub_branches);
+		b=pct_encoded(str+i, addBranch(&sub_branches));
+		if(!b) freeLast(&sub_branches);
+		c=sub_delims(str+i, addBranch(&sub_branches));
+		if(!c) freeLast(&sub_branches);
+	}
+	#ifdef DEBUG
+	printf("reg_name returns %d\n", i);
+	#endif /* DEBUG */
 	(*branch)->branches = sub_branches;
-	(*branch)->data_size = i+a+b;
-	return i+a+b;
+	(*branch)->data_size = i;
+	return i;
 }
 
 int port(char* str, Branch **branch) //* DIGIT
@@ -1577,6 +1656,9 @@ int uri_host(char* str, Branch** branch)
 	if(!i) freeLast(&sub_branches);
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("uri_host returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1599,6 +1681,9 @@ int Host(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("Host returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1680,12 +1765,12 @@ int Connection_header(char* str, Branch** branch)
 	{
 		i=11;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=Connection(str + a+i, addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+		//if(!b) freeLast(&sub_branches);
 		c=OWS(str + a+i+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a && b && c)
+		//if(!c) freeLast(&sub_branches);
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -1693,6 +1778,9 @@ int Connection_header(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
+	printf("Connection_header returns %d\n",i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -1708,12 +1796,12 @@ int Accept_Encoding_header(char* str, Branch** branch)
 	{
 		i=16;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=Accept_Encoding(str+a+i, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+		//if(!c) freeLast(&sub_branches);
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -1728,19 +1816,19 @@ int Accept_header(char* str,Branch** branch)
 {
 	*branch = new_branch(str, 0, "Accept_header");
 	BranchList* sub_branches = new_branchlist();
-
 	int i=0;
 	int a,b,c;
 	if(strcomp(str,"Accept:"))
 	{
 		i=7;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+
 		b=Accept(str+a+i, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
+
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+		//if(!c) freeLast(&sub_branches);
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -1762,12 +1850,12 @@ int User_Agent_header(char* str,Branch** branch)
 	{
 		i=11;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
-		b=Accept(str+a+i, addBranch(&sub_branches));
+		//if(!a) freeLast(&sub_branches);
+		b=User_Agent(str+a+i, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+		//if(!c) freeLast(&sub_branches);
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -1803,12 +1891,12 @@ int Referer_header(char* str, Branch** branch)
 	{
 		i=8;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=referer(str+a+i, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+		//if(!c) freeLast(&sub_branches);
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -1865,7 +1953,9 @@ int request_target(char *str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("request_target returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 
 }
@@ -1923,12 +2013,13 @@ int HTTP_version(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	#ifdef DEBUG
 	printf("HTTP_version returns %d\n", res);
+	#endif /* DEBUG */
 	return res;
 }
 int request_line(char *str, Branch** branch)
 {
-	printf("Début request line sur %s", str);
 	*branch = new_branch(str, 0, "request_line");
 	BranchList* sub_branches = new_branchlist();
 	int res;
@@ -1972,7 +2063,9 @@ int request_line(char *str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	#ifdef DEBUG
 	printf("request_line returns %d\n", res);
+	#endif /* DEBUG */
 	return res;
 }
 
@@ -2057,7 +2150,9 @@ int status_line(char *str, Branch** branch)
 	else res = 0;
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	#ifdef DEBUG
 	printf("status_line returns %d\n", res);
+	#endif /* DEBUG */
 	return res;
 }
 
@@ -2080,13 +2175,16 @@ int start_line(char *str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = res;
+	#ifdef DEBUG
 	printf("start_line returns %d\n", res);
+	#endif /* DEBUG */
 	return res;
 }
 
 
-int Accept(char* str, Branch** branch) //pas finis !!!!!
+int Accept(char* str, Branch** branch)
 {
+
 	*branch = new_branch(str, 0, "Accept");
 	BranchList* sub_branches = new_branchlist();
 
@@ -2106,9 +2204,9 @@ int Accept(char* str, Branch** branch) //pas finis !!!!!
 		else i+=1;
 
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=OWS(str+i+a+1, addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+		//if(!b) freeLast(&sub_branches);
 		c=media_range(str+i+a+1+b, addBranch(&sub_branches));
 		if(!c) freeLast(&sub_branches);
 		d=accept_params(str+i+a+1+b+c, addBranch(&sub_branches));
@@ -2117,9 +2215,9 @@ int Accept(char* str, Branch** branch) //pas finis !!!!!
 		{
 			i+=a+b+c+d+1;
 			a=OWS(str+i, addBranch(&sub_branches));
-			if(!a) freeLast(&sub_branches);
+			//if(!a) freeLast(&sub_branches);
 			b=OWS(str+i+a+1, addBranch(&sub_branches));
-			if(!b) freeLast(&sub_branches);
+			//if(!b) freeLast(&sub_branches);
 			c=media_range(str+i+a+1+b, addBranch(&sub_branches));
 			if(!c) freeLast(&sub_branches);
 			d=accept_params(str+i+a+1+b+c, addBranch(&sub_branches));
@@ -2128,7 +2226,9 @@ int Accept(char* str, Branch** branch) //pas finis !!!!!
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("Accept returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -2144,12 +2244,12 @@ int Host_header(char* str, Branch** branch)
 	{
 		i=5;
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+		//if(!a) freeLast(&sub_branches);
 		b=Host(str+a+i, addBranch(&sub_branches));
 		if(!b) freeLast(&sub_branches);
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -2157,7 +2257,9 @@ int Host_header(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("Host_header returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -2173,12 +2275,11 @@ int Cookie_header(char* str, Branch** branch)
 		i=7;
 
 		a=OWS(str+i, addBranch(&sub_branches));
-		if(!a) freeLast(&sub_branches);
+
 		b=cookie_string(str+a+i, addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -2186,7 +2287,9 @@ int Cookie_header(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("Cookie_header returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -2201,12 +2304,12 @@ int Transfer_Encoding_header(char* str, Branch** branch)
 	{
 		i=7;
 		a=(OWS(str+i, addBranch(&sub_branches)));
-		if(!a) freeLast(&sub_branches);
+
 		b=Transfer_Encoding(str +a+i,addBranch(&sub_branches));
-		if(!b) freeLast(&sub_branches);
+
 		c=OWS(str+i+a+b, addBranch(&sub_branches));
-		if(!c) freeLast(&sub_branches);
-		if(a&&b&&c)
+
+		if(b)
 		{
 			i+=a+b+c;
 		}
@@ -2215,7 +2318,9 @@ int Transfer_Encoding_header(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("Transfer_Encoding returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -2236,8 +2341,10 @@ int header_field(char* str, Branch** branch)
 	e=Referer_header(str, addBranch(&sub_branches));
 	if(!e) freeLast(&sub_branches);
 	f=User_Agent_header(str, addBranch(&sub_branches));
+
 	if(!f) freeLast(&sub_branches);
 	g=Accept_header(str, addBranch(&sub_branches));
+
 	if(!g) freeLast(&sub_branches);
 	h=Accept_Encoding_header(str, addBranch(&sub_branches));
 	if(!h) freeLast(&sub_branches);
@@ -2246,7 +2353,9 @@ int header_field(char* str, Branch** branch)
 
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = a+b+c+d+e+f+g+h+i;
+	#ifdef DEBUG
 	printf("header_field returns %d\n", a+b+c+d+e+f+g+h+i);
+	#endif /* DEBUG */
 	return a+b+c+d+e+f+g+h+i;
 
 }
@@ -2263,7 +2372,9 @@ int message_body(char* str, Branch** branch)
 	}
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
+	#ifdef DEBUG
 	printf("message_body returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }
 
@@ -2277,12 +2388,14 @@ int HTTP_message(char* str, Branch** branch)
 	int a;
 	if(i)
 	{
-		a=header_field(str, addBranch(&sub_branches));
+		a=header_field(str+i, addBranch(&sub_branches));
 		if(!a) freeLast(&sub_branches);
 		while(a&& str[i+a]==13 && str[i+a+1]==10)
 		{
+
 			i+=a+2;
-			a=header_field(str, addBranch(&sub_branches));
+			a=header_field(str+i, addBranch(&sub_branches));
+
 			if(!a) freeLast(&sub_branches);
 		}
 		if(str[i]==13 )
@@ -2300,7 +2413,8 @@ int HTTP_message(char* str, Branch** branch)
 	(*branch)->branches = sub_branches;
 	(*branch)->data_size = i;
 
-
+	#ifdef DEBUG
 	printf("HTTP_message returns %d\n", i);
+	#endif /* DEBUG */
 	return i;
 }

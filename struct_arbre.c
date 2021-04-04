@@ -5,8 +5,9 @@
 
 Branch* new_branch(char* data, int data_size, char* tag){
     Branch* branch = (Branch*) malloc(sizeof(Branch));
-    branch->tag = (char*) malloc(strlen(tag));
+    branch->tag = (char*) malloc(strlen(tag) + 1);
     strcpy(branch->tag, tag);
+
     branch->branches = NULL;
     branch->data = data;
     branch->data_size = data_size;
@@ -28,7 +29,7 @@ void freeall(BranchList* list){
     }
     BranchList* oldlist = list;
     list = list->next;
-    free(oldlist);
+    if(oldlist) free(oldlist);
   }
 }
 

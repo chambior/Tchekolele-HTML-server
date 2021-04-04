@@ -26,3 +26,5 @@ void displaytree(Branch* t, int n);
 Branch** addBranch(BranchList** sub_branches);
 
 void freeLast(BranchList** sub_branches);
+
+void * root;

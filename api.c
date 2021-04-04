@@ -101,6 +101,10 @@ int parseur(char *req, int len){
 	branch->data_size = i;
     displaytree(branch, 0);
     printf("Fin displaytree sans erreur\n");
+
+    extern void * root;
+    root = branch;
+
 	return i;
 }
 
