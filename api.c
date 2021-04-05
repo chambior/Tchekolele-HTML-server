@@ -96,11 +96,30 @@ void purgeSubTrees(BranchList* branches){
   }
 }
 
+
+char* backslash(char *req)
+{
+  char* nouveau=malloc(sizeof(char)*(strlen(req)+1)<<1);
+  int i=0,k=0;
+  while(req[i]!='\0')
+  {
+    nouveau[k]=req[i];
+    if(req[i]==13 && req[i+1]!=10){
+      nouveau[k+1]=10;
+      k++;
+    }
+    k++;
+    i++;
+
+  }
+  nouveau[k]='\0';
+  i=0;
+  return nouveau;
+}
+
 int parseur(char *req, int len){
-    printf("parsing de la requête %s\n", req);
-    Branch* branch = getRootTree();
-
-
+  Branch* branch = getRootTree();
+    req=backslash(req);
     branch = new_branch(req, 0, "parseur");
 	BranchList* sub_branches = new_branchlist();
 

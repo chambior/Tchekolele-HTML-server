@@ -16,6 +16,10 @@ Branch* new_branch(char* data, int data_size, char* tag){
 
 BranchList* new_branchlist(){
   BranchList* branchlist = (BranchList*) malloc(sizeof(BranchList));
+  if(branchlist==NULL) {
+    perror("erreur malloc");
+    exit(0);
+  }
   branchlist->branch = NULL;
   branchlist->next = NULL;
   return branchlist;
