@@ -3,12 +3,19 @@
 
 void *getRootTree(){
   extern void * root;
+  /*extern int cnt;
+  cnt = 0;
+  extern int cnts;
+  cnts = 0;*/
   return root;
 }
 
 
 
 _Token* searchSubTrees(BranchList* branches, char* name){
+    /*extern int cnts;
+    cnt +=1;
+    printf("searchSubTree %d\n", cnts);*/
   _Token * result;
   _Token * sub_result;
   if(branches==NULL) result = NULL;
@@ -20,7 +27,7 @@ _Token* searchSubTrees(BranchList* branches, char* name){
     sub_result = result;
     if(result == NULL) result = searchSubTrees(branches->next, name);
     else{
-      while(sub_result->next != NULL) sub_result->next = sub_result;
+      while(sub_result->next != NULL) sub_result = sub_result->next;
       sub_result->next = searchSubTrees(branches->next, name);
     }
   }
@@ -28,6 +35,9 @@ _Token* searchSubTrees(BranchList* branches, char* name){
 }
 
 _Token *searchTree(void *start,char *name){
+    /*extern int cnt;
+    cnt +=1;
+    printf("searchTree %d\n", cnt);*/
   _Token * result;
   Branch * branch;
 

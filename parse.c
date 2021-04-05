@@ -827,6 +827,7 @@ int parameter(char *str, Branch** branch)
 
 int media_range(char* str, Branch** branch)
 {
+	printf("\n\n\n\n\n %s \n\n\n\n\n\n",str);
 	*branch = new_branch(str, 0, "media_range");
 	BranchList* sub_branches = NULL;
 
@@ -835,13 +836,23 @@ int media_range(char* str, Branch** branch)
 
 	int a = type(str, addBranch(&sub_branches));
 	if(!a) freeLast(&sub_branches);
-	int b = subtype(str+2, addBranch(&sub_branches));
+	int b = subtype(str+a+1, addBranch(&sub_branches));
 	if(!b) freeLast(&sub_branches);
 
 	int c;
-	if((str[0]=='*' && str[1]=='/' && str[2]=='*') || (a && str[1]=='/' && b) || (a && str[1]== '/' && str[2]=='*'))
+	if((str[0]=='*' && str[1]=='/' && str[2]=='*') || (a && str[a]=='/' && b) || (a && str[a]== '/' && str[a+1]=='*'))
 	{
-		i+=3;
+		printf("rfgkhfvezkhef$fhezeknfsd\n");
+		if(a)
+		{
+			i+=a;
+			if(b)
+			{
+				i+=b+1;
+			}
+			else i+=2;
+		}
+		else i=3;
 		a=OWS(str+i, addBranch(&sub_branches));
 		//if(!a) freeLast(&sub_branches);
 		b=OWS(str+i+a+1, addBranch(&sub_branches));
@@ -2184,13 +2195,14 @@ int start_line(char *str, Branch** branch)
 
 int Accept(char* str, Branch** branch)
 {
-
+	printf("Accept recoit : %s\n",str);
 	*branch = new_branch(str, 0, "Accept");
 	BranchList* sub_branches = new_branchlist();
 
 	int i=0;
 	int a,b,c,d;
 	a=media_range(str, addBranch(&sub_branches));
+	printf("%d \n\n\n\n\n",a);
 	if(!a) freeLast(&sub_branches);
 
 	if(a||str[i]==',')
@@ -2395,7 +2407,6 @@ int HTTP_message(char* str, Branch** branch)
 
 			i+=a+2;
 			a=header_field(str+i, addBranch(&sub_branches));
-
 			if(!a) freeLast(&sub_branches);
 		}
 		if(str[i]==13 )

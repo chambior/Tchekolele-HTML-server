@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "api_sub_functions.h"
+#include "api.h"
 
 #define false 0
 
@@ -21,18 +21,9 @@ int main(int argc,char *argv[])
 
         struct stat st;
 
-	if (argc < 3 ) {
-		if ((fi=open("tests/get1",O_RDWR)) == -1) {
-	                perror("open");
-	                return false;
-	        }
-	        if (fstat(fi, &st) == -1)           /* To obtain file size */
-	                return false;
-	        if ((addr=mmap(NULL,st.st_size,PROT_WRITE,MAP_PRIVATE, fi, 0)) == NULL )
-	                return false;
-	}
+	if (argc < 3 ) { printf("Usage: httpparser <file> <search>\nAttention <search> is case sensitive\n"); exit(1); }
 	/* ouverture du fichier contenant la requête */
-	else if ((fi=open(argv[1],O_RDWR)) == -1) {
+	if ((fi=open(argv[1],O_RDWR)) == -1) {
                 perror("open");
                 return false;
         }

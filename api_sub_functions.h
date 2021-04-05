@@ -9,3 +9,6 @@ _Token* searchSubTrees(BranchList* branches, char* name);
 void subPurgeElement(_Token *r);
 void purgeSubTrees(BranchList* branches);
 void displayElement(_Token *r);
+/*
+int cnt;
+int cnts;*/
